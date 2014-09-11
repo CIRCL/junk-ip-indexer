@@ -1,0 +1,5 @@
+- serialize data such that it can be used with mmap
+- implement binary search to load files
+- Aggregation store only ports that appeared more than x times
+ 
+

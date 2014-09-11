@@ -1,0 +1,73 @@
+Number of unique IPs: 1067812
+
+Space for storing the index. 4172 KB
+
+For each IP store 1 byte of frequency for max 64KB ports
+
+-> total. 267008 KB per index
+
+idea: compress 64KB blocks with LZO? 
+or use a math compression algo of distributions?
+
+port 80: 200 times
+port 1: 1 times
+
+
+-> histogram of occurences
+
+
+[100-150] port 80,21,666
+[0-10] port port 1,2,3,4,5....100 //sparse part
+
+10 intervals  ports are encoded on 2 bytes (a bit per port)
+port info 20 bytes 
+
+
+--> total 83 MB per index per 5 minutes
+
+
+map of map takes 500MB of memory per index
+
+30 min of netflow consume 3GB of memory
+Index has 5000 0000 IP addresses
+
+Index has 500MB on disk in text format from boost
+
+
+|---------------|
+| HEADER        |
+|---------------| --
+| IP1 | OFFSET 1|    TOC Table of contents
+| IP2 | OFFSET 2|
+| ... | ....... | --
+
+
+IP 4 bytes
+OFFSET 4 bytes (enough?)
+
+TOC entry 8 bytes
+
+Number of TOC entries per 30 minutes 5.000.000
+Table size: +-40MB
+
+20 bytes per port distribution per IP address
+
+Index Size 800 MB
+
+average: 8 bytes per IP address --> 320 MB
+ 
+
+Lookups:
+
+1) Open index file
+2) Binary search for IP address log N when 5000000 IPS are inside -> 15 seeks
+operations must be made
+3) Load 8 to 20 bytes histogram and show approximate values 2^log(counter) in
+   bins
+
+
+Alternative: create a List of IP addresses with the compact port distribution,
+that is serialized with boost
+
+
+-> serialize data in level db?
