@@ -33,6 +33,7 @@
 #include <boost/iostreams/copy.hpp>
 #include <boost/iostreams/filter/zlib.hpp>
 #include <boost/iostreams/filter/gzip.hpp>
+#include <sstream>
 using namespace std; 
 
 namespace fs = boost::filesystem;
@@ -56,19 +57,21 @@ int main (int argc, char* argv[])
     ofstream f;
     uint64_t num_v6_flows;
     char c;
+    stringstream buffer;
+    stringstream comp_buffer;
     if (argc != 2) {
         fprintf(stderr,"An nfcapd file needs to be passed as command line argument\n");
         return (EXIT_FAILURE);
     }
 
-    f.open("test.dat", ios::out | ios::binary);
-    boost::iostreams::filtering_streambuf<boost::iostreams::output> out;    
-    //out.push(boost::iostreams::zlib_compressor());
-    out.push(boost::iostreams::gzip_compressor());
-    out.push(f); 
-    char data[5] = {'a', 'b', 'c', 'd', 'e'};    
-    boost::iostreams::copy(boost::iostreams::basic_array_source<char>(data, sizeof(data)), out);
-    return 0;
+    //f.open("test.dat", ios::out | ios::binary);
+    //boost::iostreams::filtering_streambuf<boost::iostreams::output> out;    
+    //out.push(boost::iostreams::zlib_compressor());Y
+    //out.push(boost::iostreams::gzip_compressor());
+    //out.push(f); 
+    //char data[5] = {'a', 'b', 'c', 'd', 'e'};    
+    //boost::iostreams::copy(boost::iostreams::basic_array_source<char>(data, sizeof(data)), out);
+    //return 0;
     /* Initialize libnfdump */
     states = initlib(NULL, argv[1],NULL);
     if (states) {
@@ -87,8 +90,11 @@ int main (int argc, char* argv[])
                     flow.prot = rec->prot;
                     flow.dPkts = rec->dPkts;
                     flow.dOctets = rec->dOctets;
-//                     boost::iostreams::copy(boost::iostreams::basic_array_source<char>((char*)&flow, sizeof(flow_record_t)), out);
-//                    out.write((char*)&flow, sizeof(flow_record_t));
+                    //FIXME the previous sample code can only compress data 
+                    //one time with the copy method? A mix of compressed data
+                    //and uncompressed data must go through another string 
+                    //buffer
+                    buffer.write((char*)&flow, sizeof(flow_record_t));
                 }
             }
         } while (rec);
@@ -96,6 +102,13 @@ int main (int argc, char* argv[])
         /* Close the nfcapd file and free up internal states */
         libcleanup(states);
     }
+    
+    f.open("test.dat.gz", ios::out | ios::binary);
+    boost::iostreams::filtering_streambuf<boost::iostreams::output> out;    
+    out.push(boost::iostreams::gzip_compressor()); 
+    out.push(f);
+    boost::iostreams::copy(buffer, out);
+    f.close();
     cout << "Press a key to terminate "<<endl;
     cin >> c;
     return(EXIT_SUCCESS);
