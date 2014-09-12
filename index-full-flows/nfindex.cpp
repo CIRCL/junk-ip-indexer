@@ -27,10 +27,15 @@
 #include <arpa/inet.h>
 #include <string.h>
 #include <stdlib.h>
+#include <fstream>
+#include <iostream>
+#include <boost/iostreams/filtering_streambuf.hpp>
+#include <boost/iostreams/copy.hpp>
+#include <boost/iostreams/filter/zlib.hpp>
+#include <boost/iostreams/filter/gzip.hpp>
 using namespace std; 
 
 namespace fs = boost::filesystem;
-
 typedef struct flow_record_s {    
         uint32_t srcaddr;
         uint32_t dstaddr;
@@ -56,8 +61,14 @@ int main (int argc, char* argv[])
         return (EXIT_FAILURE);
     }
 
-    
     f.open("test.dat", ios::out | ios::binary);
+    boost::iostreams::filtering_streambuf<boost::iostreams::output> out;    
+    //out.push(boost::iostreams::zlib_compressor());
+    out.push(boost::iostreams::gzip_compressor());
+    out.push(f); 
+    char data[5] = {'a', 'b', 'c', 'd', 'e'};    
+    boost::iostreams::copy(boost::iostreams::basic_array_source<char>(data, sizeof(data)), out);
+    return 0;
     /* Initialize libnfdump */
     states = initlib(NULL, argv[1],NULL);
     if (states) {
@@ -76,7 +87,8 @@ int main (int argc, char* argv[])
                     flow.prot = rec->prot;
                     flow.dPkts = rec->dPkts;
                     flow.dOctets = rec->dOctets;
-                    f.write((char*)&flow, sizeof(flow_record_t));
+//                     boost::iostreams::copy(boost::iostreams::basic_array_source<char>((char*)&flow, sizeof(flow_record_t)), out);
+//                    out.write((char*)&flow, sizeof(flow_record_t));
                 }
             }
         } while (rec);
