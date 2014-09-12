@@ -99,16 +99,18 @@ int main (int argc, char* argv[])
                 }
             }
         } while (rec);
-        f.close();
         /* Close the nfcapd file and free up internal states */
         libcleanup(states);
     }
     
-    f.open("test.dat.gz", ios::out | ios::binary);
     boost::iostreams::filtering_streambuf<boost::iostreams::output> out;    
     out.push(boost::iostreams::gzip_compressor()); 
-    out.push(f);
+    out.push(comp_buffer);
     boost::iostreams::copy(buffer, out);
+
+    f.open("test.dat.gz", ios::out | ios::binary);
+    f<<"Some gzip compressed data follows this string";
+    f.write(comp_buffer.str().c_str(), comp_buffer.str().length());
     f.close();
     cout << "Press a key to terminate "<<endl;
     cin >> c;
