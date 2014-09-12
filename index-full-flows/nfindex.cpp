@@ -65,14 +65,6 @@ int main (int argc, char* argv[])
         return (EXIT_FAILURE);
     }
 
-    //f.open("test.dat", ios::out | ios::binary);
-    //boost::iostreams::filtering_streambuf<boost::iostreams::output> out;    
-    //out.push(boost::iostreams::zlib_compressor());Y
-    //out.push(boost::iostreams::gzip_compressor());
-    //out.push(f); 
-    //char data[5] = {'a', 'b', 'c', 'd', 'e'};    
-    //boost::iostreams::copy(boost::iostreams::basic_array_source<char>(data, sizeof(data)), out);
-    //return 0;
     /* Initialize libnfdump */
     states = initlib(NULL, argv[1],NULL);
     if (states) {
@@ -94,7 +86,7 @@ int main (int argc, char* argv[])
                     //FIXME the previous sample code can only compress data 
                     //one time with the copy method? A mix of compressed data
                     //and uncompressed data must go through another string 
-                    //buffer
+                    //buffer?
                     buffer.write((char*)&flow, sizeof(flow_record_t));
                 }
             }
@@ -112,6 +104,7 @@ int main (int argc, char* argv[])
     f<<"Some gzip compressed data follows this string";
     f.write(comp_buffer.str().c_str(), comp_buffer.str().length());
     f.close();
+
     cout << "Press a key to terminate "<<endl;
     cin >> c;
     return(EXIT_SUCCESS);
