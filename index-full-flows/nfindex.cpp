@@ -5,6 +5,7 @@
  *  Orginal nfcapd file size: 103 MB 
  *  file of sequences of flow_record_t consumes 171MB
  *  gzip the entire file with bash command line: 58MB
+ *  Using string buffers program uses at peak +- 500MB if RAM
  */
 #include <libnfdump/libnfdump.h>
 #include <map>
