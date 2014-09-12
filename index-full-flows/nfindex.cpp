@@ -1,10 +1,10 @@
 /*
- * Copy flows and let them close to each others
- * For one nfcapd file only 117MB of memory is consumed although the flows
- * are duplicated
- * 
- * Alternative: create blocks of flows and put bloomfilters in front
- * 
+ *  Compression test 
+ *  Strip nfrecords
+ *  
+ *  Orginal nfcapd file size: 103 MB 
+ *  file of sequences of flow_record_t consumes 171MB
+ *  gzip the entire file with bash command line: 58MB
  */
 #include <libnfdump/libnfdump.h>
 #include <map>
@@ -26,12 +26,12 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <string.h>
+#include <stdlib.h>
 using namespace std; 
 
 namespace fs = boost::filesystem;
 
-class FlowRecord {
-    public:
+typedef struct flow_record_s {    
         uint32_t srcaddr;
         uint32_t dstaddr;
         uint16_t srcport;
@@ -41,12 +41,14 @@ class FlowRecord {
         uint8_t prot;
         uint64_t dPkts;
         uint64_t dOctets;
-};
+} flow_record_t;
 
 int main (int argc, char* argv[])
 {
     libnfstates_t* states;
     master_record_t* rec;
+    flow_record_t flow;
+    ofstream f;
     uint64_t num_v6_flows;
     char c;
     if (argc != 2) {
@@ -54,9 +56,8 @@ int main (int argc, char* argv[])
         return (EXIT_FAILURE);
     }
 
-    /* Index how many times an IP address emerged in a file */
-    map < uint32_t, FlowRecord > index;
     
+    f.open("test.dat", ios::out | ios::binary);
     /* Initialize libnfdump */
     states = initlib(NULL, argv[1],NULL);
     if (states) {
@@ -67,30 +68,19 @@ int main (int argc, char* argv[])
                     //FIXME Cannot handle v6 flows but count them
                     num_v6_flows++;
                 } else {
-                    // Index the full flow for the source IP
-                    index[rec->v4.srcaddr].srcaddr = rec->v4.srcaddr;
-                    index[rec->v4.srcaddr].dstaddr = rec->v4.dstaddr;
-                    index[rec->v4.srcaddr].srcport = rec->srcport;
-                    index[rec->v4.srcaddr].dstport = rec->dstport;
-                    index[rec->v4.srcaddr].first = rec->first;
-                    index[rec->v4.srcaddr].last = rec->last;
-                    index[rec->v4.srcaddr].prot = rec->prot;            
-                    index[rec->v4.srcaddr].dPkts = rec->dPkts;
-                    index[rec->v4.srcaddr].dOctets = rec->dOctets;
-                    // Index the full flow for the destination IP
-                    index[rec->v4.dstaddr].srcaddr = rec->v4.srcaddr;
-                    index[rec->v4.dstaddr].dstaddr = rec->v4.dstaddr;
-                    index[rec->v4.dstaddr].srcport = rec->srcport;
-                    index[rec->v4.dstaddr].dstport = rec->dstport;
-                    index[rec->v4.dstaddr].first = rec->first;
-                    index[rec->v4.dstaddr].last = rec->last;
-                    index[rec->v4.dstaddr].prot = rec->prot;            
-                    index[rec->v4.dstaddr].dPkts = rec->dPkts;
-                    index[rec->v4.dstaddr].dOctets = rec->dOctets;
+                    flow.srcaddr = rec->v4.srcaddr;
+                    flow.srcport = rec->srcport;
+                    flow.dstaddr = rec->v4.dstaddr;
+                    flow.first = rec->first;
+                    flow.last = rec->last;
+                    flow.prot = rec->prot;
+                    flow.dPkts = rec->dPkts;
+                    flow.dOctets = rec->dOctets;
+                    f.write((char*)&flow, sizeof(flow_record_t));
                 }
             }
         } while (rec);
-        
+        f.close();
         /* Close the nfcapd file and free up internal states */
         libcleanup(states);
     }
